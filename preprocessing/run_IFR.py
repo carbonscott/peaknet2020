@@ -60,8 +60,7 @@ def main():
     results["son_mins"] = son_mins
     results["amax_thrs"] = amax_thrs
 
-    # for i in range(len(df)):
-    for i in range(1):
+    for i in range(len(df)):
         filename = df.iloc[i]["filename"]
         exp = df.iloc[i]["experiment"]
         run = df.iloc[i]["run"]
