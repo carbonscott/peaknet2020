@@ -45,8 +45,9 @@ def main():
     total = my_exp.eventTotal
     print("Number of events: " + str(total))
 
-    print("Indexing Rate: " + str(indexed / total))
-    print("Indexing Failure Rate: " + str(1 - indexed / total))
+    ratio = float(indexed) / float(total)
+    print("Indexing Rate: " + str(ratio))
+    print("Indexing Failure Rate: " + str(1 - ratio))
 
 if __name__ == "__main__":
     main()
