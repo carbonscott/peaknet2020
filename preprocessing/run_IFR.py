@@ -4,6 +4,7 @@ import shutil
 import argparse
 import numpy as np
 from streamManager import iStream
+import psana
 
 class Experiment:
     def __init__(self, experimentName, runNumber, detInfo='cspad'):

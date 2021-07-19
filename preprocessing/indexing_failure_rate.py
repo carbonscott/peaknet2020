@@ -2,7 +2,6 @@ from streamManager import iStream
 import argparse
 import psana
 
-
 class Experiment:
     def __init__(self, experimentName, runNumber, detInfo='cspad'):
         self.experimentName = experimentName
