@@ -30,8 +30,7 @@ def parse_args():
 def main():
     args = parse_args()
 
-    print(args.filename)
-
+    print("Reading stream file...")
     extract = iStream()
     extract.initial(fstream=args.filename)
     extract.get_label()
@@ -40,7 +39,7 @@ def main():
     indexed = len(extract.label.index)
     print("Number of reflection lists in stream: " + str(indexed))
 
-    my_exp = Experiment(args.experiement, args.run, None)
+    my_exp = Experiment(args.experiment, args.run, None)
     my_exp.setup()
 
     total = my_exp.eventTotal
