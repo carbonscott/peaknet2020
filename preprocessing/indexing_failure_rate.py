@@ -46,3 +46,6 @@ def main():
 
     print("Indexing Rate: " + str(indexed / total))
     print("Indexing Failure Rate: " + str(1 - indexed / total))
+
+if __name__ == "__main__":
+    main()
