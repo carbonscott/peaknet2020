@@ -75,7 +75,7 @@ def main():
     results["amax_thrs"] = amax_thrs
 
     # for i in range(len(df)):
-    for i in range(1):
+    for i in range(2):
 
         print('')
         print(str(i + 1) + '/' + str(len(df)))
