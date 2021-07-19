@@ -1,10 +1,6 @@
-import numpy as np
-import h5py
 from streamManager import iStream
 import argparse
 import psana
-import os
-import shutil
 
 
 class Experiment:
