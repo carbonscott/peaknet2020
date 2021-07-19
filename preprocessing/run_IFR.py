@@ -74,8 +74,7 @@ def main():
     results["son_mins"] = son_mins
     results["amax_thrs"] = amax_thrs
 
-    # for i in range(len(df)):
-    for i in range(2):
+    for i in range(len(df)):
 
         print('')
         print(str(i + 1) + '/' + str(len(df)))
@@ -114,6 +113,8 @@ def main():
 
         seen = get_new_seen(extract)
         results[exp][run]["seen_events"] = list(set(results[exp][run]["seen_events"] + seen))
+
+        print("Seen events: " + str(len(results[exp][run]["seen_events"])))
 
     for exp in experiments:
         for run in results[exp].keys():
