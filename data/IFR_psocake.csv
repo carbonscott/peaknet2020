@@ -1,2 +1,5 @@
 ,filename,experiment,run,son_min,amax_thr
 0,/cds/data/psdm/cxi/cxic0415/scratch/axlevy/psocake/r0100/cxic0415_0100_py2peaknet1.stream,cxic0415,100,6,200
+1,/cds/data/psdm/cxi/cxic0415/scratch/axlevy/psocake/r0100/cxic0415_0100_py2peaknet1.stream,cxic0415,100,6,400
+2,/cds/data/psdm/cxi/cxic0415/scratch/axlevy/psocake/r0100/cxic0415_0100_py2peaknet1.stream,cxic0415,100,8,200
+3,/cds/data/psdm/cxi/cxic0415/scratch/axlevy/psocake/r0100/cxic0415_0100_py2peaknet1.stream,cxic0415,100,8,400

@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import shutil
 import argparse
+import numpy as np
 
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__)
@@ -29,10 +30,18 @@ def main():
 
     os.makedirs(save_dir)
 
-    experiments = df["experiment"]
+    experiments = list(set(df["experiment"]))
+    n_son_mins = len(list(set(df["son_min"])))
+    n_amax_thr = len(list(set(df["amax_thr"])))
 
-    for
     results = {}
+    for exp in experiments:
+        results[exp] = {}
+        runs = list(set(df.query("experiment == '{}'".format(exp))["run"]))
+        for run in runs:
+            results[exp][run] = np.zeros((n_son_mins, n_amax_thr), dtype=float)
+
+    
 
 if __name__ == "__main__":
     main()
