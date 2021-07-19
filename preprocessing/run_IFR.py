@@ -112,15 +112,11 @@ def main():
 
         results[exp][run]["n_indexed"][son_min_idx, amax_thr_idx] = indexed
 
-        print(results)
-
         seen = get_new_seen(extract)
         results[exp][run]["seen_events"] = list(set(results[exp][run]["seen_events"] + seen))
 
     for exp in experiments:
-        results[exp] = {}
-        runs = list(set(df.query("experiment == '{}'".format(exp))["run"]))
-        for run in runs:
+        for run in results[exp].keys():
             results[exp][run]["seen_events"] = len(results[exp][run]["seen_events"])
 
     save_name = save_dir + '/results.npy'
