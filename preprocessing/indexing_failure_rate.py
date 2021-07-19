@@ -30,6 +30,8 @@ def parse_args():
 def main():
     args = parse_args()
 
+    print(args.filename)
+
     extract = iStream()
     extract.initial(fstream=args.filename)
     extract.get_label()
