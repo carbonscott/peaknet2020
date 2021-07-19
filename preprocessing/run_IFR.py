@@ -6,6 +6,20 @@ import numpy as np
 from streamManager import iStream
 import psana
 
+def get_new_seen(extract):
+    seen = []
+    for idx in range(len(extract.label.index)):
+        event_idx = get_event_number(extract, idx)
+        seen.append(event_idx)
+    seen = list(set(seen))
+    return seen
+
+def get_event_number(extract, idx_stream):
+    event_number_pos = extract.label.index[idx_stream][2]
+    line = extract.content[event_number_pos]
+    id = int(line.split()[1].split('/')[2])
+    return id
+
 class Experiment:
     def __init__(self, experimentName, runNumber, detInfo='cspad'):
         self.experimentName = experimentName
@@ -56,11 +70,16 @@ def main():
         results[exp] = {}
         runs = list(set(df.query("experiment == '{}'".format(exp))["run"]))
         for run in runs:
-            results[exp][run] = np.zeros((n_son_mins, n_amax_thrs), dtype=float)
+            results[exp][run] = {"n_indexed": np.zeros((n_son_mins, n_amax_thrs), dtype=float), "seen_events": []}
     results["son_mins"] = son_mins
     results["amax_thrs"] = amax_thrs
 
-    for i in range(len(df)):
+    # for i in range(len(df)):
+    for i in range(1):
+
+        print('')
+        print(str(i + 1) + '/' + len(df))
+
         filename = df.iloc[i]["filename"]
         exp = df.iloc[i]["experiment"]
         run = df.iloc[i]["run"]
@@ -83,17 +102,24 @@ def main():
         indexed = len(extract.label.index)
         print("Number of reflection lists in stream: " + str(indexed))
 
-        my_exp = Experiment(exp, run, None)
-        my_exp.setup()
+        # my_exp = Experiment(exp, run, None)
+        # my_exp.setup()
+        # total = my_exp.eventTotal
+        # print("Number of events: " + str(total))
+        # ratio = float(indexed) / float(total)
+        # print("Indexing Rate: " + str(ratio))
+        # print("Indexing Failure Rate: " + str(1 - ratio))
 
-        total = my_exp.eventTotal
-        print("Number of events: " + str(total))
+        results[exp][run]["n_indexed"][son_min_idx, amax_thr_idx] = indexed
 
-        ratio = float(indexed) / float(total)
-        print("Indexing Rate: " + str(ratio))
-        print("Indexing Failure Rate: " + str(1 - ratio))
+        seen = get_new_seen(extract)
+        results[exp][run]["seen_events"] = list(set(results[exp][run]["seen_events"] + seen))
 
-        results[exp][run][son_min_idx, amax_thr_idx] = 1 - ratio
+    for exp in experiments:
+        results[exp] = {}
+        runs = list(set(df.query("experiment == '{}'".format(exp))["run"]))
+        for run in runs:
+            results[exp][run]["seen_events"] = len(results[exp][run]["seen_events"])
 
     save_name = save_dir + '/results.npy'
     print("Saving at " + save_name)
