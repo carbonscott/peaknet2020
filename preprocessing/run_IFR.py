@@ -78,7 +78,7 @@ def main():
     for i in range(1):
 
         print('')
-        print(str(i + 1) + '/' + len(df))
+        print(str(i + 1) + '/' + str(len(df)))
 
         filename = df.iloc[i]["filename"]
         exp = df.iloc[i]["experiment"]
