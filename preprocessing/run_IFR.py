@@ -112,6 +112,8 @@ def main():
 
         results[exp][run]["n_indexed"][son_min_idx, amax_thr_idx] = indexed
 
+        print(results)
+
         seen = get_new_seen(extract)
         results[exp][run]["seen_events"] = list(set(results[exp][run]["seen_events"] + seen))
 
