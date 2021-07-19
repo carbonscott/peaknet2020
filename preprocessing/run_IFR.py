@@ -3,6 +3,20 @@ import pandas as pd
 import shutil
 import argparse
 import numpy as np
+from streamManager import iStream
+
+class Experiment:
+    def __init__(self, experimentName, runNumber, detInfo='cspad'):
+        self.experimentName = experimentName
+        self.runNumber = runNumber
+        self.detInfo = detInfo
+
+    def setup(self):
+        access = 'exp=' + str(self.experimentName) + ':run=' + str(self.runNumber) + ':idx'
+        self.ds = psana.DataSource(access)
+        self.run = next(self.ds.runs())
+        self.times = self.run.times()
+        self.eventTotal = len(self.times)
 
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__)
@@ -45,7 +59,8 @@ def main():
     results["son_mins"] = son_mins
     results["amax_thrs"] = amax_thrs
 
-    for i in range(len(df)):
+    # for i in range(len(df)):
+    for i in range(1):
         filename = df.iloc[i]["filename"]
         exp = df.iloc[i]["experiment"]
         run = df.iloc[i]["run"]
@@ -53,9 +68,37 @@ def main():
         amax_thr = df.iloc[i]["amax_thr"]
         son_min_idx = np.argwhere(son_mins == son_min)
         amax_thr_idx = np.argwhere(amax_thrs == amax_thr)
-        results[exp][run][son_min_idx, amax_thr_idx] = son_min + amax_thr
 
-    print(results)
+        print('Experiment: ' + str(exp))
+        print('Run: ' + str(run))
+        print('son_min: ' + str(son_min))
+        print('amax_thr: ' + str(amax_thr))
+
+        print("Reading stream file...")
+        extract = iStream()
+        extract.initial(fstream=filename)
+        extract.get_label()
+        extract.get_info()
+
+        indexed = len(extract.label.index)
+        print("Number of reflection lists in stream: " + str(indexed))
+
+        my_exp = Experiment(exp, run, None)
+        my_exp.setup()
+
+        total = my_exp.eventTotal
+        print("Number of events: " + str(total))
+
+        ratio = float(indexed) / float(total)
+        print("Indexing Rate: " + str(ratio))
+        print("Indexing Failure Rate: " + str(1 - ratio))
+
+        results[exp][run][son_min_idx, amax_thr_idx] = 1 - ratio
+
+    save_name = save_dir + '/results.npy'
+    print("Saving at " + save_name)
+    np.save(save_name, results)
+    print("Saved!")
 
 if __name__ == "__main__":
     main()
