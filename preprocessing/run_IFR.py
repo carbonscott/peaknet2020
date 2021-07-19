@@ -31,17 +31,31 @@ def main():
     os.makedirs(save_dir)
 
     experiments = list(set(df["experiment"]))
-    n_son_mins = len(list(set(df["son_min"])))
-    n_amax_thr = len(list(set(df["amax_thr"])))
+    son_mins = np.sort(list(set(df["son_min"])))
+    amax_thrs = np.sort(list(set(df["amax_thr"])))
+    n_son_mins = len(son_mins)
+    n_amax_thrs = len(amax_thrs)
 
     results = {}
     for exp in experiments:
         results[exp] = {}
         runs = list(set(df.query("experiment == '{}'".format(exp))["run"]))
         for run in runs:
-            results[exp][run] = np.zeros((n_son_mins, n_amax_thr), dtype=float)
+            results[exp][run] = np.zeros((n_son_mins, n_amax_thrs), dtype=float)
+    results["son_mins"] = son_mins
+    results["amax_thrs"] = amax_thrs
 
-    
+    for i in range(len(df)):
+        filename = df.iloc[i]["filename"]
+        exp = df.iloc[i]["experiment"]
+        run = df.iloc[i]["run"]
+        son_min = df.iloc[i]["son_min"]
+        amax_thr = df.iloc[i]["amax_thr"]
+        son_min_idx = np.argwhere(son_mins == son_min)
+        amax_thr_idx = np.argwhere(amax_thrs == amax_thr)
+        results[exp][run][son_min_idx, amax_thr_idx] = son_min + amax_thr
+
+    print(results)
 
 if __name__ == "__main__":
     main()
