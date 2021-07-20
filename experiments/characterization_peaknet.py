@@ -3,7 +3,7 @@ import os
 
 os.chdir("/cds/home/a/axlevy/peaknet2020/peaknet")
 
-index_experiment = 7 # 2, 3,
+index_experiment = 1 # 7, 2, 3,
 
 print("Index Experiment: " + str(index_experiment))
 
@@ -150,3 +150,9 @@ if index_experiment == 7:
                   ' --use_focal_loss False'
                   ' --use_scheduled_pos_weight True --lr 0.01'
                   ' --save_name ' + str(save_name) + ' --pos_weight ' + str(pw))
+
+# Experiment #8: just training a unet model to check evaluation
+if index_experiment == 8:
+    os.system('python train.py params.json --n_experiments 5 --n_per_run -1 --n_epochs 1 --show_image_every 1000'
+              ' --use_indexed_peaks False --downsample 2 --use_focal_loss False --use_scheduled_pos_weight True'
+              ' --lr 0.01 --experiment_name my_model --pos_weight 1e-3')

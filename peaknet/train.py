@@ -126,7 +126,12 @@ def train(model, device, params, writer):
                     if seen % params["upload_every"] == 0:
                         saver.upload(metrics, params["save_name"])
                     if seen % (params["backup_every"]) == 0:
-                        torch.save(model.state_dict(), "debug/"+params["experiment_name"]+"/model.pt")
+                        print('---')
+                        print("Backing up...")
+                        backup_path = "debug/"+params["experiment_name"]+"/model.pt"
+                        torch.save(model.state_dict(), backup_path)
+                        print("Model has been backed up at " + backup_path +".")
+                        print('---')
                     if seen % params["show_image_every"] == 0:
                         visualize.show_GT_prediction_image(writer, img_vis, target_vis, total_steps, params, device,
                                                            model, use_indexed_peaks=params["use_indexed_peaks"])
@@ -167,7 +172,7 @@ def parse_args():
     p.set_defaults(confirm_delete=False)
     p.add_argument("--saver_type", type=str, default=None)
     p.add_argument("--save_name", type=str, default=None)
-    p.add_argument("--backup_every", type=int, default=500)
+    p.add_argument("--backup_every", type=int, default=100)
     p.add_argument("--print_every", type=int, default=25)
     p.add_argument("--show_image_every", type=int, default=100)
     p.add_argument("--upload_every", type=int, default=100)

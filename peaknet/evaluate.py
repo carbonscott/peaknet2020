@@ -53,12 +53,12 @@ def evaluate(model, device, params):
             print("*********************************************************************")
             psana_images = PSANAImage(cxi_path, exp, run, downsample=model.downsample, n=params["n_per_run"])
             data_loader = DataLoader(psana_images, batch_size=params["batch_size"], shuffle=True, drop_last=True,
-                                     num_workers=0)
+                                     num_workers=params["num_workers"])
             for j, (x, y) in enumerate(data_loader):
                 n = x.size(0)
-                h, w = x.size(2), x.size(3)
-                x = x.view(-1, 1, h, w).to(device)  # each panel is treated independently !!
-                y = y.view(-1, 3, h, w).to(device)
+                y = y.view(-1, y.size(2), y.size(3), y.size(4))
+                x = x.to(device)
+                y = y.to(device)
                 scores = model(x)
                 metrics = evaluation_metrics(scores, y, cutoff=params["cutoff_eval"])
 
@@ -93,6 +93,7 @@ def parse_args():
     p.add_argument("--n_experiments", type=int, default=-1)
     p.add_argument("--n_per_run", type=int, default=50000)
     p.add_argument("--batch_size", type=int, default=5)
+    p.add_argument("--num_workers", type=int, default=0)
 
     return p.parse_args()
 
@@ -120,6 +121,7 @@ def main():
     params["n_experiments"] = args.n_experiments
     params["n_per_run"] = args.n_per_run
     params["batch_size"] = args.batch_size
+    params["num_workers"] = args.num_workers
 
     evaluate(model, device, params)
 
