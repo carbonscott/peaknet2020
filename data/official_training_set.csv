@@ -1,4 +1,4 @@
-﻿;exp;path;run;subset
+;exp;path;run;subset
 0;cxid9114;/reg/data/ana03/scratch/yoon82/peaknet2020/cxid9114/yoon82/psocake/r0095/cxid9114_0095_200_6.stream,cxid9114,95,6,200;95;train
 1;cxid9115;/reg/data/ana03/scratch/yoon82/peaknet2020/cxid9114/yoon82/psocake/r0095/cxid9114_0095_200_8.stream,cxid9114,95,8,200;95;train
 2;cxid9116;/reg/data/ana03/scratch/yoon82/peaknet2020/cxid9114/yoon82/psocake/r0095/cxid9114_0095_200_10.stream,cxid9114,95,10,200;95;train
