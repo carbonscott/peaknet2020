@@ -1,13 +1,14 @@
 import numpy as np
+import h5py
 
 class Saver():
     def __init__(self, saver_type, params):
         self.saver_type = saver_type
         print('')
         if saver_type == "precision_recall":
-            print("Precision and recall will be saved in saved_outputs directory.")
+            print("Precision, recall and loss will be saved in saved_outputs directory.")
             self.content = {"params": params, "precision": [], "recall": [], "loss": []}
-        elif saver_type == "precision_recall_evaluation":
+        elif saver_type == "precision_recall_no_loss":
             print("Precision and recall will be saved in saved_outputs directory.")
             self.content = {"params": params, "precision": [], "recall": []}
         elif saver_type is None:

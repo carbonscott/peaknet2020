@@ -137,6 +137,51 @@ class PSANAImage(Dataset):
             labels = self.make_yolo_labels(s, r, c)
             return img, labels
 
+class PSANADatasetNoLabel(Dataset):
+
+    def __init__(self, df_path, n=-1, shuffle=False):
+        self.df = pd.read_csv(df_path)
+        if n > 0:
+            n = min(n, len(self.df))
+            self.df = self.df.sample(n=n)
+        if shuffle:
+            self.df = self.df.sample(frac=1.0)
+        self.n = len(self.df)
+
+    def __len__(self):
+        return self.n
+
+    def __getitem__(self, idx):
+        exp, run = self.df.iloc[idx][["exp", "run"]]
+        return exp, run
+
+class PSANAImageNoLabel(Dataset):
+
+    def __init__(self, exp, run):
+        self.psana = PSANAReader(exp, run, self.detector)
+        self.psana.build()
+        self.detector = self.psana.det_name
+        self.n = len(self.psana.times)
+
+    def __len__(self):
+        return self.n
+
+    def close(self):
+        self.psana.ds = None
+
+    def __getitem__(self, idx):
+        img = self.psana.load_img(idx)
+        img[img < 0] = 0
+        if self.normalize:
+            for i in range(img.shape[0]):
+                img[i] = img[i] / np.max(img[i])
+        h = img.shape[1]
+        w = img.shape[2]
+
+        img_tensor = torch.zeros(img.shape[0], h, w)
+        img_tensor[:, 0:img.shape[1], 0:img.shape[2]] = torch.from_numpy(img)
+
+        return img_tensor
 
 class PSANAReader(object):
 

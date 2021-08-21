@@ -5,11 +5,12 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from data import PSANADataset, PSANAImage
+from data import PSANAImageNoLabel, PSANADatasetNoLabel
 from unet import UNet
 from saver import Saver
 import shutil
 import argparse
+import h5py
 
 def evaluation_metrics(scores, y, cutoff=0.5):
     scores_c = scores[:, 0, :, :].reshape(-1)
@@ -32,48 +33,64 @@ def check_existence(exp, run):
     files = glob("/reg/d/psdm/cxi/{}/xtc/*{}*.xtc".format(exp, run))
     return len(files) > 0
 
-def evaluate(model, device, params):
+def peak_find(model, device, params):
     model.eval()
 
-    saver = Saver(params["saver_type"], params)
-
-    eval_dataset = PSANADataset(params["run_dataset_path"], subset="val", shuffle=True, n=params["n_experiments"])
+    eval_dataset = PSANADatasetNoLabel(params["run_dataset_path"], shuffle=True, n=params["n_experiments"])
     seen = 0
+
+    print('')
+    print('---')
+    print("Writing cxi file...")
+    print("Name: " + params["save_name"])
+    save_dir = "saved_outputs/psocake_cxi/"
+    cxi_file = h5py.File(save_dir + params["save_name"] + '.cxi', 'w')
+
+    # Groups in cxi file
+    LCLS = cxi_file.create_group('LCLS')
+    result_1 = cxi_file.create_group('entry_1/result_1')
+    detector_1 = cxi_file.create_group('entry_1/instrument_1/detector_1')
+
+    event_numbers = []
 
     total_steps = 0
     with torch.no_grad():
-        for i, (cxi_path, exp, run) in enumerate(eval_dataset):
+        for i, (exp, run) in enumerate(eval_dataset):
             if check_existence(exp, run):
                 pass
             else:
                 print("[{:}] exp: {}  run: {}  PRECHECK FAILED".format(i, exp, run))
                 continue
             print("*********************************************************************")
-            print("[{:}] exp: {}  run: {}\ncxi: {}".format(i, exp, run, cxi_path))
+            print("[{:}] exp: {}  run: {}".format(i, exp, run))
             print("*********************************************************************")
-            psana_images = PSANAImage(cxi_path, exp, run, downsample=model.downsample, n=params["n_per_run"])
+            psana_images = PSANAImageNoLabel(exp, run)
             data_loader = DataLoader(psana_images, batch_size=params["batch_size"], shuffle=True, drop_last=True,
                                      num_workers=params["num_workers"])
-            for j, (x, y) in enumerate(data_loader):
+            for j, x in enumerate(data_loader):
                 n = x.size(0)
-                y = y.view(-1, y.size(2), y.size(3), y.size(4))
                 x = x.to(device)
-                y = y.to(device)
                 scores = model(x)
-                metrics = evaluation_metrics(scores, y, cutoff=params["cutoff_eval"])
 
                 total_steps += 1
                 seen += n
 
-                if seen % params["print_every"] == 0:
-                    print_str = "seen " + str(seen) + " ; "
-                    for (key, value) in metrics.items():
-                        print_str += key + " " + str(value) + " ; "
-                    print(print_str)
-                if seen % params["upload_every"] == 0:
-                    saver.upload(metrics, params["save_name"])
+                ### Do smtg w/ scores here
+                event_numbers.append(j)
             psana_images.close()
-        saver.save(params["save_name"])
+
+    # Save cxi file
+    print('')
+    print("Saving cxi file...")
+    LCLS.create_dataset('eventNumber', data=event_numbers)
+    result_1.create_dataset('nPeaks', data=nPeaks_array)
+    result_1.create_dataset('peak2', data=peak2)
+    result_1.create_dataset('peak1', data=peak1)
+    detector_1.create_dataset('description', data=default_detector)
+    result_1.create_dataset('peakXPosRaw', data=peakXPosRaw)
+    result_1.create_dataset('peakYPosRaw', data=peakYPosRaw)
+    cxi_file.close()
+    print("Saved!")
 
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__)
@@ -89,12 +106,13 @@ def parse_args():
     p.add_argument("--cutoff_eval", type=float, default=0.5)
     p.add_argument("--print_every", type=int, default=10)
     p.add_argument("--upload_every", type=int, default=1)
-    p.add_argument("--saver_type", type=str, default="precision_recall_evaluation")
     p.add_argument("--save_name", type=str, default=None)
     p.add_argument("--n_experiments", type=int, default=-1)
     p.add_argument("--n_per_run", type=int, default=-1)
     p.add_argument("--batch_size", type=int, default=5)
     p.add_argument("--num_workers", type=int, default=0)
+    p.add_argument("--verbose", type=str, default="True")
+    ### Downsample is 1 for now
 
     return p.parse_args()
 
@@ -118,14 +136,20 @@ def main():
     params["cutoff_eval"] = args.cutoff_eval
     params["print_every"] = args.print_every
     params["upload_every"] = args.upload_every
-    params["saver_type"] = args.saver_type
     params["save_name"] = args.save_name
     params["n_experiments"] = args.n_experiments
     params["n_per_run"] = args.n_per_run
     params["batch_size"] = args.batch_size
     params["num_workers"] = args.num_workers
+    if args.verbose == "True":
+        params["verbose"] = True
+    else:
+        params["verbose"] = False
 
-    evaluate(model, device, params)
+    if params["save_name"] is None:
+        params["save_name"] = params["run_dataset_path"].split('.')[0].split('/')[-1]
+
+    peak_find(model, device, params)
 
 
 if __name__ == "__main__":
