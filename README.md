@@ -17,6 +17,25 @@ export PYTHONPATH=`pwd`/install/lib/python2.7/site-packages
 python setup.py develop --prefix=`pwd`/install
 ```
 
+## Start
+
+```source init.sh```
+
+where `source.init` (in root directory):
+```
+#!/bin/bash
+
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib/:$LD_LIBRARY_PATH
+
+export PYTHONPATH=`pwd`/install/lib/python2.7/site-packages
+```
+
+and then
+```
+cd peaknet
+python train.py params_model_1.json -g 0
+```
+
 ## Usage
 
 To create a PeakNet handle
