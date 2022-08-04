@@ -197,7 +197,8 @@ class PSANAReader(object):
     def build(self):
         self.ds = psana.DataSource("exp={}:run={}:idx".format(self.exp, self.run))
         self.det = psana.Detector(self.det_name)
-        self.this_run = self.ds.runs().next()
+        ## self.this_run = self.ds.runs().next()
+        self.this_run = next(self.ds.runs())
         self.times = self.this_run.times()
 
     def load_img(self, event_idx):
