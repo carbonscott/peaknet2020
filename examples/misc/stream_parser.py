@@ -4,6 +4,7 @@
 import os
 import re
 import logging
+import pickle
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,11 @@ class ConfigParam:
 class ExtractPeak:
     '''
     Extract successfully indexed peaks previously found by psocake peak finder.
+
+    Remark: Avoid parsing a stream file if you can.  CrystFEL stream file has
+    several level of ambiguities to handle (:, =, 2 kinds of tabulated data).
+    Python's lack of non-backtracking in regex (the '(?>)' block) will
+    exacerbate the file parsing.
     '''
 
     def __init__(self, config):
@@ -47,50 +53,16 @@ class ExtractPeak:
         self.peak_dict = {}
 
 
-    def setup_re(self):
-        '''
-        Set up extended regex for parsing a stream file.
-        '''
-        # Define the regex that matches a line with peak found...
-        re_match_found_peak = re.compile(
-            r"""(?xm)
-                    ^                                      # Match the beginning
-                    (?:
-                        (?: [-+]?(?:\d+(?:\.\d*)?|\.\d+) ) # Match a floating number
-                        \s+?                               # Match whitespace at least once
-                    ){4}                                   # Match the whole construct 4 times
-
-                    (?: [0-9A-Za-z]+ )                     # Match a detector panel
-                    $                                      # Match the end
-             """)
-
-        # Define the regex that matches a line with peak indexed...
-        re_match_indexed_peak = re.compile(
-            r'''(?xm)
-                    ^                                      # Match the beginning
-                    (?:
-                        (?: [-+]?(?:\d+(?:\.\d*)?|\.\d+) ) # Match a floating number
-                        \s+?                               # Match whitespace at least once
-                    ){9}                                   # Match the whole construct 9 times
-
-                    (?:[0-9A-Za-z]+)                       # Match a detector panel
-                    $                                      # Match the end
-             ''')
-
-        return re_match_found_peak, re_match_indexed_peak
-
-
     def parse(self):
         '''
         Return a dictionary of events that contain successfully indexed peaks
         found by psocake peak finder.
         '''
-        # Setup regex for matching purposes...
-        re_match_found_peak, re_match_indexed_peak = self.setup_re()
-
         # Define state variable for parse/skipping lines...
         is_chunk_found = False
         save_peak_ok   = False
+        in_peaklist    = False
+        in_indexedlist = False
 
         # Import marker...
         marker_dict = self.marker_dict
@@ -98,19 +70,22 @@ class ExtractPeak:
         # Start parsing a stream file by chunks...
         path_stream = self.path_stream
         with open(path_stream,'r') as fh:
-            for line in fh.readlines():
+            for line in fh:
                 line = line.strip()
 
-                # Turn off recording by default for a new chunk...
+                # To find a new chunk...
+                # Consider chunk is found...
                 if line == marker_dict["CHUNK_START"]: 
                     is_chunk_found = True
                     save_peak_ok   = False    # ...Don't save any peaks by default
 
+                # Consider chunk not found at the end of a chunk...
                 if line == marker_dict["CHUNK_END"]: is_chunk_found = False
 
-                # Don't bother any parsing statements below if a chunk is not found...
+                # Skip parsing statements below if a chunk is not found...
                 if not is_chunk_found: continue
 
+                # To decide whether to save peaks...
                 # Look up filename...
                 if line.startswith("Image filename: "):
                     filename = line[line.rfind(':') + 1:] # e.g. 'Image filename: /xxx/cxig3514_0041.cxi'
@@ -125,67 +100,100 @@ class ExtractPeak:
                 if line.startswith("indexed_by"):
                     status_indexing = line[line.rfind('=') + 1:].strip() # e.g. 'indexed_by = none'
 
-                    # Turn on recording when indexing is successful...
+                    # Allow peak saving when indexing is successful...
                     if status_indexing != 'none': save_peak_ok = True
 
                 # Don't save any peaks if indexing is not successful...
                 if not save_peak_ok: continue
 
-                # Get ready to save results from events in each file...
+                # To save results from events in each file...
                 # Save by filename
                 if not filename in self.peak_dict: self.peak_dict[filename] = {}
 
                 # Save by event number
                 if not event_num in self.peak_dict[filename]:
-                    self.peak_dict[filename][event_num] = {
-                        "found"   : {},
-                        "indexed" : {},
-                    }
+                    self.peak_dict[filename][event_num] = {}
 
-                # Is it a found peak???
-                match_result = re_match_found_peak.match(line)
-                if match_result is not None:
-                    data = match_result.group(0)
-                    dim1, dim2, _, _, panel = data.split()
+                # Find a peak list...
+                if line == marker_dict["PEAK_LIST_START"]:
+                    in_peaklist = True
+                    is_first_line_in_peaklist = True
+                    continue
 
-                    if not panel in self.peak_dict[filename][event_num]["found"]: 
+                # Exit a peak list...
+                if line == marker_dict["PEAK_LIST_END"]:
+                    in_peaklist = False
+                    continue
+
+                # To Save peaks in a peak list...
+                if in_peaklist:
+                    # Skip the header...
+                    if is_first_line_in_peaklist:
+                        is_first_line_in_peaklist = False
+                        continue
+
+                    # Saving...
+                    dim1, dim2, _, _, panel = line.split()
+
+                    if not panel in self.peak_dict[filename][event_num]: 
                         self.peak_dict[filename ] \
                                       [event_num] \
-                                      ["found"  ] \
-                                      [panel    ] = []
+                                      [panel    ] = { 'found' : [], 'indexed' : [] }
 
                     self.peak_dict[filename ] \
                                   [event_num] \
-                                  ["found"  ] \
-                                  [panel    ].append([float(dim1), 
-                                                      float(dim2),])
+                                  [panel    ] \
+                                  ['found'  ].append((float(dim1), 
+                                                      float(dim2),))
+                    continue
 
-                # Is it a indexed peak???
-                match_result = re_match_indexed_peak.match(line)
-                if match_result is not None:
-                    data = match_result.group(0)
-                    _, _, _, _, _, _, _, dim1, dim2, panel = data.split()
+                # Find a indexed list...
+                if line == marker_dict["REFLECTION_START"]:
+                    in_indexedlist = True
+                    is_first_line_in_indexedlist = True
+                    continue
 
-                    if not panel in self.peak_dict[filename ] \
-                                                  [event_num] \
-                                                  ["indexed"]:
-                        self.peak_dict[filename ] \
-                                      [event_num] \
-                                      ["indexed"] \
-                                      [panel    ] = []
+                # Exit a indexed list...
+                if line == marker_dict["REFLECTION_END"]:
+                    in_indexedlist = False
+                    continue
 
+                # To Save peaks in a indexed list...
+                if in_indexedlist:
+                    # Skip the header...
+                    if is_first_line_in_indexedlist:
+                        is_first_line_in_indexedlist = False
+                        continue
+
+                    # Saving...
+                    _, _, _, _, _, _, _, dim1, dim2, panel = line.split()
+
+                    # If the panel doesn't have found peak, skip it...
+                    if not panel in self.peak_dict[filename][event_num]: continue
+
+                    # Otherwise, save it...
                     self.peak_dict[filename ] \
                                   [event_num] \
-                                  ["indexed"] \
-                                  [panel    ].append([float(dim1), 
-                                                      float(dim2),])
+                                  [panel    ] \
+                                  ['indexed'].append((float(dim1), 
+                                                      float(dim2),))
+                    continue
+
+
 
 
 # [[[ EXAMPLE ]]]
 
 ## path_stream = '/reg/data/ana15/cxi/cxig3514/scratch/cwang31/psocake/r0041/cxig3514_0041.stream'
 path_stream = '/reg/data/ana15/cxi/cxig3514/scratch/cwang31/psocake/r0041/cxig3514_0041_d100.stream'
+## path_stream = '/reg/data/ana15/cxi/cxig3514/scratch/cwang31/psocake/r0041/test2.stream'
+## path_stream = '/reg/data/ana15/cxi/cxig3514/scratch/cwang31/psocake/r0041/test4.stream'
 ## path_stream = '/reg/data/ana15/cxi/cxig3514/scratch/cwang31/psocake/r0041/test.stream'
 config_extract_peak = ConfigParam( path_stream = path_stream )
 extract_peak = ExtractPeak(config_extract_peak)
 extract_peak.parse()
+peak_dict = extract_peak.peak_dict
+
+fl_peak_dict = 'peak_dict.pickle'
+with open(fl_peak_dict, 'wb') as fh:
+    pickle.dump(peak_dict, fh, protocol = pickle.HIGHEST_PROTOCOL)
