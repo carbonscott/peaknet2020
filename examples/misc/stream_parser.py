@@ -88,8 +88,9 @@ class ExtractPeak:
         # Setup regex for matching purposes...
         re_match_found_peak, re_match_indexed_peak = self.setup_re()
 
-        # Define state variable...
-        record_ok = False
+        # Define state variable for parse/skipping lines...
+        is_chunk_found = False
+        save_peak_ok   = False
 
         # Import marker...
         marker_dict = self.marker_dict
@@ -101,7 +102,14 @@ class ExtractPeak:
                 line = line.strip()
 
                 # Turn off recording by default for a new chunk...
-                if line == marker_dict["CHUNK_START"]: record_ok = False
+                if line == marker_dict["CHUNK_START"]: 
+                    is_chunk_found = True
+                    save_peak_ok   = False    # ...Don't save any peaks by default
+
+                if line == marker_dict["CHUNK_END"]: is_chunk_found = False
+
+                # Don't bother any parsing statements below if a chunk is not found...
+                if not is_chunk_found: continue
 
                 # Look up filename...
                 if line.startswith("Image filename: "):
@@ -118,16 +126,16 @@ class ExtractPeak:
                     status_indexing = line[line.rfind('=') + 1:].strip() # e.g. 'indexed_by = none'
 
                     # Turn on recording when indexing is successful...
-                    if status_indexing != 'none': record_ok = True
+                    if status_indexing != 'none': save_peak_ok = True
 
-                # Don't record anything???
-                if not record_ok: continue
+                # Don't save any peaks if indexing is not successful...
+                if not save_peak_ok: continue
 
                 # Get ready to save results from events in each file...
-                # Accumulate by filename
+                # Save by filename
                 if not filename in self.peak_dict: self.peak_dict[filename] = {}
 
-                # Accumulate by event number
+                # Save by event number
                 if not event_num in self.peak_dict[filename]:
                     self.peak_dict[filename][event_num] = {
                         "found"   : {},
