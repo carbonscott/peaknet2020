@@ -1,0 +1,5 @@
+{
+  "model": "UNet",
+  "batch_size": 2,
+  "n_filters": 24
+}

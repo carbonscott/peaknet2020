@@ -1,13 +1,12 @@
 import numpy as np
 import time
-from glob import glob
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-from data import PSANADataset, PSANAImage
+from peaknet.data import PSANADataset, PSANAImage
 from unet import UNet
-from loss import PeaknetBCELoss
-from train import check_existence
+from peaknet.loss import PeaknetBCELoss
+from peaknet.train import check_existence
 import matplotlib as mpl
 mpl.use('Agg')
 from matplotlib import pyplot as plt
@@ -60,12 +59,9 @@ def validate(model, device, params, save_plot=False):
             with torch.no_grad():
                 n = x.size(0)
                 h, w = x.size(2), x.size(3)
-                #print("x", x.size()),
                 x = x.view(-1, 1, h, w).to(device)
-                #print("y", y.size())
                 y = y.view(-1, 3, h, w).to(device)
                 t1 = time.time()
-                #print("inference")
                 scores = model(x)
                 t2 = time.time()
                 loss, recall, precision, rmsd = loss_func(scores, y, verbose=params["verbose"], cutoff=params["cutoff"])
