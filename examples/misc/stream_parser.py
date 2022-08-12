@@ -31,9 +31,10 @@ class ExtractPeak:
     Extract successfully indexed peaks previously found by psocake peak finder.
 
     Remark: Avoid parsing a stream file if you can.  CrystFEL stream file has
-    several level of ambiguities to handle (:, =, 2 kinds of tabulated data).
+    several levels of ambiguities to handle (:, =, 2 kinds of tabulated data).
     Python's lack of non-backtracking in regex (the '(?>)' block) will
     exacerbate the file parsing.
+
     '''
 
     def __init__(self, config):
@@ -147,13 +148,13 @@ class ExtractPeak:
                                                       float(dim2),))
                     continue
 
-                # Find a indexed list...
+                # Find an indexed list...
                 if line == marker_dict["REFLECTION_START"]:
                     in_indexedlist = True
                     is_first_line_in_indexedlist = True
                     continue
 
-                # Exit a indexed list...
+                # Exit an indexed list...
                 if line == marker_dict["REFLECTION_END"]:
                     in_indexedlist = False
                     continue
@@ -185,10 +186,11 @@ class ExtractPeak:
 # [[[ EXAMPLE ]]]
 
 ## path_stream = '/reg/data/ana15/cxi/cxig3514/scratch/cwang31/psocake/r0041/cxig3514_0041.stream'
-path_stream = '/reg/data/ana15/cxi/cxig3514/scratch/cwang31/psocake/r0041/cxig3514_0041_d100.stream'
+## path_stream = '/reg/data/ana15/cxi/cxig3514/scratch/cwang31/psocake/r0041/cxig3514_0041_d100.stream'
 ## path_stream = '/reg/data/ana15/cxi/cxig3514/scratch/cwang31/psocake/r0041/test2.stream'
 ## path_stream = '/reg/data/ana15/cxi/cxig3514/scratch/cwang31/psocake/r0041/test4.stream'
 ## path_stream = '/reg/data/ana15/cxi/cxig3514/scratch/cwang31/psocake/r0041/test.stream'
+path_stream = '/reg/data/ana03/scratch/cwang31/pf/cxic0415_0101.test.stream'
 config_extract_peak = ConfigParam( path_stream = path_stream )
 extract_peak = ExtractPeak(config_extract_peak)
 extract_peak.parse()
